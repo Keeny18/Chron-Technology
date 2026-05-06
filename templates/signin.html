@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1>Chron Technology</h1>
+        </nav>
+        <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
+    </header>
+
+    <main>
+        <section>
+            <h2>SignIn</h2>
+        </section>
+
+
+        <div class="signin_signup_box">
+            <div class="signin_signup_content">
+                <form action="/signin" method="post">
+
+                <div class="form-group">
+                  <label for="email">Email:</label>
+                  <input name="email" id="email" placeholder="Email" type="email" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="password">Password:</label>
+                  <input name="password" id="password" placeholder="Password" type="password" required>
+                </div>
+
+                <button class="signin_submit" type="submit">SignIn</button>
+              </form>
+                <ul class="signinlink">
+                    <a href="/signup" id="signup_submit">SignUp</a>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

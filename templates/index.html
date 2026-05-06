@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1 class="websitelogo">Chron Technology</h1>
+            <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
+        </nav>
+
+        <!-- _______________________ nav bar _______________________ -->
+        <div class="topnav">
+            <div class="nav-left">
+                <a class="active_page" href="/">Home</a>
+                {% if session.get('user_id') %}
+                <a class="notactive_page" href="conditions">Conditions</a>
+                <a class="notactive_page" href="log">Log</a>
+                <a class="notactive_page" href="summary">Summary</a>
+                <a class="notactive_page" href="contact">Contact</a>
+                {% endif %}
+            </div>
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="dropdown">
+                    <span class="dropdown-toggle">Account</span>
+                    <div class="dropdown-menu">
+                        <a href="/account">My Account</a>
+                        <a href="/signout">Sign Out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a class="notactive_page" href="signup">SignUp</a>
+                <a class="notactive_page" href="signin">SignIn</a>
+                {% endif %}
+            </div>
+        </div>
+        <!-- _______________________ end nav bar _______________________ -->
+    </header>
+
+    <main>
+        <section>
+            <h2>Welcome {% if first_name %} {{ first_name }}{% endif %}</h2>
+            
+            <!-- _______________________ navigation buttons _______________________ -->
+            <div class="button_links_collection">
+                <div>
+                    <a href="{% if session.get('user_id') %}conditions{% else %}signup{% endif %}">
+                        <button class="index_button_links">
+                            <p class="symbol_index_button">➕</p>
+                            <p>Manage and View Your Chronic Condtions</p>
+                        </button>
+                    </a>
+
+                    <a href="{% if session.get('user_id') %}log{% else %}signup{% endif %}">
+                        <button class="index_button_links">
+                            <p class="symbol_index_button">📋</p>
+                            <p>Log Your Chronic Flare Ups</p>
+                        </button>
+                    </a>
+                </div>
+
+                <div>
+                    <a href="{% if session.get('user_id') %}summary{% else %}signup{% endif %}">
+                        <button class="index_button_links">
+                            <p class="symbol_index_button">📄</p>
+                            <p>View a Consolidated Summary of Your Condtions and Episodes</p>
+                        </button>
+                    </a>
+
+                    <a href="{% if session.get('user_id') %}contact{% else %}signup{% endif %}">
+                        <button class="index_button_links">
+                            <p class="symbol_index_button">📞</p>
+                            <p>Contact Us with Questions or Advise to Grow the Site</p>
+                        </button>
+                    </a>
+                </div>
+
+            </div>
+            <!-- _______________________ end navigation buttons -->
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

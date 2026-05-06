@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1 class="websitelogo">Chron Technology</h1>
+        </nav>
+
+        <div class="topnav">
+            <div class="nav-left">
+                <a class="notactive_page" href="/">Home</a>
+                {% if session.get('user_id') %}
+                <a class="active_page" href="conditions">Conditions</a>
+                <a class="notactive_page" href="log">Log</a>
+                <a class="notactive_page" href="summary">Summary</a>
+                <a class="notactive_page" href="contact">Contact</a>
+                {% endif %}
+            </div>
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="dropdown">
+                    <span class="dropdown-toggle">Account</span>
+                    <div class="dropdown-menu">
+                        <a href="/account">My Account</a>
+                        <a href="/signout">Sign Out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a class="notactive_page" href="signup">SignUp</a>
+                <a class="notactive_page" href="signin">SignIn</a>
+                {% endif %}
+            </div>
+        </div>
+        <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
+    </header>
+
+    <main>
+        <section>
+            <h2>Conditions</h2>
+
+            <!-- <div class="all_condition_display">
+                {% if user_conditions %}
+                <div class="user-conditions">
+                    <h3 class="condition_heading">Your Conditions</h3>
+                    {% for id, condition, triggers in user_conditions %}
+                    <div class="individual_condition_trigger">
+                        <p class="condition_display_name">{{ condition }}</p>
+                        <p class="trigger_display_name">{{ triggers }}</p>
+
+                        <form action="/delete/{{ id }}" method="POST">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="user-conditions">
+                    <h3 class="condition_heading">Your Conditions</h3>
+                    <div class="individual_condition_trigger">
+                        <p class="trigger_display_name">You have not added any conditions</p>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div> -->
+
+
+
+            <div class="summary-section">
+                <h3>My Conditions</h3>
+                {% if user_conditions %}
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Triggers/Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for id, condition, triggers in user_conditions %}
+                        <tr>
+                            <td>{{ condition }}</td>
+                            <td>{{ triggers }}</td>
+                        </tr>
+                        <form action="/delete/{{ id }}" method="POST">
+                            <button type="submit">Delete</button>
+                        </form>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="no-data">No conditions recorded yet.</p>
+                {% endif %}
+            </div>
+
+
+            <div class="add_condition">
+                <h3>Add Conditions</h3>
+                <input type="text" id="condition-search" placeholder="Search conditions..." onkeyup="filterConditions()">
+
+                <form method="post" action="/conditions">
+                    <div class="condition-list" id="condition-list">
+                        {% for condition in all_conditions %}
+                        <div class="condition-item" style="display: none;">
+                            <label>
+                                <input type="checkbox" name="conditions" value="{{ condition }}"
+                                    {% if condition in user_condition_names %}disabled{% endif %}
+                                    onchange="toggleTrigger(this)">
+                                {{ condition }}
+                                {% if condition in user_condition_names %}<span>(already added)</span>{% endif %}
+                            </label>
+                            <textarea name="trigger_{{ condition }}" placeholder="Enter triggers and important information for {{ condition }}..." class="condition_summary_box trigger-input" style="display: none;"></textarea>
+                            <button type="submit" class="add-condition-btn" style="display: none;">Add Selected Conditions</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function filterConditions() {
+            const searchTerm = document.getElementById('condition-search').value.toLowerCase();
+            const items = document.querySelectorAll('.condition-item');
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (searchTerm && text.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function toggleTrigger(checkbox) {
+            const conditionItem = checkbox.closest('.condition-item');
+            const textarea = conditionItem.querySelector('.trigger-input');
+            const addBtn = conditionItem.querySelector('.add-condition-btn');
+
+            if (checkbox.checked) {
+                textarea.style.display = 'block';
+                addBtn.style.display = 'block';
+            } else {
+                textarea.style.display = 'none';
+                textarea.value = '';
+                addBtn.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1>Chron Technology</h1>
+        </nav>
+        <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
+    </header>
+
+    <main>
+        <section>
+            <h2>SignUp</h2>
+        </section>
+
+
+        <div class="signin_signup_box">
+            <div class="signin_signup_content">
+                <form action="/signup" method="post">
+                <label for="first_name">First Name:</label>
+                <input name="first_name" id="first_name" placeholder="First Name" type="text" required>
+
+                <label for="last_name">Last Name:</label>
+                <input name="last_name" id="last_name" placeholder="Last Name" type="text" required>
+
+                <label for="email">Email:</label>
+                <input name="email" id="email" placeholder="Email" type="email" required>
+
+                <label for="date_of_birth">Date of Birth:</label>
+                <input name="date_of_birth" id="date_of_birth" type="date" required>
+
+                <label for="password">Password:</label>
+                <input name="password" id="password" placeholder="Password" type="password" required>
+
+                <button class="signin_submit" type="submit">SignUp</button>
+            </form>
+
+            <ul class="signinlink">
+                <a href="/signin" id="signup_submit">SIGN IN</a>
+            </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date_of_birth').max = today;
+    </script>
+</body>
+</html>

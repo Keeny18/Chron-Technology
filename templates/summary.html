@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1 class="websitelogo">Chron Technology</h1>
+        </nav>
+
+        <div class="topnav">
+            <div class="nav-left">
+                <a class="notactive_page" href="/">Home</a>
+                {% if session.get('user_id') %}
+                <a class="notactive_page" href="conditions">Conditions</a>
+                <a class="notactive_page" href="log">Log</a>
+                <a class="active_page" href="summary">Summary</a>
+                <a class="notactive_page" href="contact">Contact</a>
+                {% endif %}
+            </div>
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="dropdown">
+                    <span class="dropdown-toggle">Account</span>
+                    <div class="dropdown-menu">
+                        <a href="/account">My Account</a>
+                        <a href="/signout">Sign Out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a class="notactive_page" href="signup">SignUp</a>
+                <a class="notactive_page" href="signin">SignIn</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <h2>Summary</h2>
+            <a href="/download_summary" class="download-btn">Download PDF</a>
+        </section>
+
+        <div class="summary-container">
+            <div class="summary-section">
+                <h3>Personal Information</h3>
+                <div class="info-grid">
+                    <p><strong>Name:</strong> {{ user_info.first_name }} {{ user_info.last_name }}</p>
+                    <p><strong>Email:</strong> {{ user_info.email }}</p>
+                    <p><strong>Date of Birth:</strong> {{ user_info.date_of_birth }}</p>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <h3>My Conditions</h3>
+                {% if conditions %}
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Condition</th>
+                            <th>Triggers/Notes</th>
+                            <th>Added On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for condition in conditions %}
+                        <tr>
+                            <td>{{ condition[0] }}</td>
+                            <td>{{ condition[1] if condition[1] else '-' }}</td>
+                            <td>{{ condition[2][:10] if condition[2] else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="no-data">No conditions recorded yet.</p>
+                {% endif %}
+            </div>
+
+            <div class="summary-section">
+                <h3>Flare Up Log</h3>
+                {% if flare_ups %}
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for flare in flare_ups %}
+                        <tr>
+                            <td>{{ flare[0].replace('T', ' ') if flare[0] else '-' }}</td>
+                            <td>{{ flare[1].replace('T', ' ') if flare[1] else '-' }}</td>
+                            <td>{{ flare[2] if flare[2] else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="no-data">No flare ups logged yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
