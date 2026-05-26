@@ -62,7 +62,8 @@
                     <thead>
                         <tr>
                             <th>Condition</th>
-                            <th>Triggers/Notes</th>
+                            <th>Triggers</th>
+                            <th>Important Information</th>
                             <th>Added On</th>
                         </tr>
                     </thead>
@@ -71,7 +72,8 @@
                         <tr>
                             <td>{{ condition[0] }}</td>
                             <td>{{ condition[1] if condition[1] else '-' }}</td>
-                            <td>{{ condition[2][:10] if condition[2] else '-' }}</td>
+                            <td>{{ condition[2] if condition[2] else '-' }}</td>
+                            <td>{{ condition[3][:10] if condition[3] else '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -87,6 +89,7 @@
                 <table class="summary-table">
                     <thead>
                         <tr>
+                            <th>Conditions</th>
                             <th>Start Time</th>
                             <th>End Time</th>
                             <th>Notes</th>
@@ -95,6 +98,7 @@
                     <tbody>
                         {% for flare in flare_ups %}
                         <tr>
+                            <td>{{ flare[3] if flare[3] else '-' }}</td>
                             <td>{{ flare[0].replace('T', ' ') if flare[0] else '-' }}</td>
                             <td>{{ flare[1].replace('T', ' ') if flare[1] else '-' }}</td>
                             <td>{{ flare[2] if flare[2] else '-' }}</td>

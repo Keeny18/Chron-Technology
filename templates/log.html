@@ -43,9 +43,25 @@
         <section>
             <h2 class="topPageHeadings">Log</h2>
         </section>
+
         <div class="add_log_display">
             <h3>Log a Flare Up</h3>
             <form method="post" action="log_flareups">
+                <div class="log-form-group">
+                    <label>Conditions causing this flare up</label>
+                    {% if user_conditions %}
+                    <div class="condition-checkboxes">
+                        {% for cid, cname in user_conditions %}
+                        <label class="condition-checkbox-label">
+                            <input type="checkbox" name="condition_ids" value="{{ cid }}">
+                            {{ cname }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="no-conditions-note">No conditions added yet. <a href="/conditions">Add conditions</a> first.</p>
+                    {% endif %}
+                </div>
                 <div class="log-form-group">
                     <label for="flare_up_begun">Flare Up Begun</label>
                     <input type="datetime-local" id="flare_up_begun" name="flare_up_begun">
@@ -62,12 +78,16 @@
                 </div>
             </form>
         </div>
+
         <div class="all_log_display">
             <h3 class="flareup_heading">Your Previous Flare Ups</h3>
             {% if user_logs %}
             <div class="user-logs">
-                {% for id, begin_time, end_time, comment in user_logs %}
+                {% for id, begin_time, end_time, comment, conditions in user_logs %}
                 <div class="individual_flareup">
+                    {% if conditions %}
+                    <p class="flareup_text"><strong>Conditions:</strong> {{ conditions | join(', ') }}</p>
+                    {% endif %}
                     <p class="flareup_text"><strong>Started:</strong> <span class="datetime" data-time="{{ begin_time }}">{{ begin_time }}</span></p>
                     <p class="flareup_text"><strong>Ended:</strong> <span class="datetime" data-time="{{ end_time }}">{{ end_time }}</span></p>
                     {% if comment %}

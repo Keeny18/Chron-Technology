@@ -57,7 +57,9 @@
                                 {{ condition }}
                                 {% if condition in user_condition_names %}<span class="already-added">(already added)</span>{% endif %}
                             </label>
-                            <textarea name="trigger_{{ condition }}" placeholder="Enter triggers and important information for {{ condition }}..." class="trigger-input" style="display: none;"></textarea>
+                            <textarea name="trigger_{{ condition }}" placeholder="Triggers (e.g. stress, certain foods, weather changes...)" class="trigger-input" style="display: none;"></textarea>
+                            <span class="toggle-info-link" onclick="toggleImportantInfo(this)" style="display: none;">+ Add important information (optional)</span>
+                            <textarea name="important_info_{{ condition }}" placeholder="Important information (e.g. medications, severity, doctor notes...)" class="trigger-input important-info-input" style="display: none;"></textarea>
                             <button type="submit" class="add-condition-btn" style="display: none;">Add Condition</button>
                         </div>
                         {% endfor %}
@@ -72,15 +74,17 @@
                     <thead>
                         <tr>
                             <th>Condition</th>
-                            <th>Triggers/Notes</th>
+                            <th>Triggers</th>
+                            <th>Important Information</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for id, condition, triggers in user_conditions %}
+                        {% for id, condition, triggers, important_info in user_conditions %}
                         <tr>
                             <td>{{ condition }}</td>
-                            <td>{{ triggers }}</td>
+                            <td>{{ triggers if triggers else '-' }}</td>
+                            <td>{{ important_info if important_info else '-' }}</td>
                             <td>
                                 <form action="/delete/{{ id }}" method="POST">
                                     <button type="submit" class="delete-btn">Delete</button>
@@ -113,15 +117,34 @@
 
         function toggleTrigger(checkbox) {
             const conditionItem = checkbox.closest('.condition-item');
-            const textarea = conditionItem.querySelector('.trigger-input');
+            const triggerInput = conditionItem.querySelector('.trigger-input');
+            const infoToggle = conditionItem.querySelector('.toggle-info-link');
+            const infoInput = conditionItem.querySelector('.important-info-input');
             const addBtn = conditionItem.querySelector('.add-condition-btn');
             if (checkbox.checked) {
-                textarea.style.display = 'block';
+                triggerInput.style.display = 'block';
+                infoToggle.style.display = 'inline-block';
                 addBtn.style.display = 'block';
             } else {
-                textarea.style.display = 'none';
-                textarea.value = '';
+                triggerInput.style.display = 'none';
+                triggerInput.value = '';
+                infoToggle.style.display = 'none';
+                infoInput.style.display = 'none';
+                infoInput.value = '';
                 addBtn.style.display = 'none';
+            }
+        }
+
+        function toggleImportantInfo(link) {
+            const conditionItem = link.closest('.condition-item');
+            const infoInput = conditionItem.querySelector('.important-info-input');
+            if (infoInput.style.display === 'none') {
+                infoInput.style.display = 'block';
+                link.textContent = '- Remove important information';
+            } else {
+                infoInput.style.display = 'none';
+                infoInput.value = '';
+                link.textContent = '+ Add important information (optional)';
             }
         }
     </script>

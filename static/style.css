@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Nunito', sans-serif;
+}
+
 header {
   position: fixed;
   top: 0;
@@ -260,6 +266,19 @@ main {
     resize: vertical;
 }
 
+.toggle-info-link {
+    font-size: 13px;
+    color: #f5f2ec;
+    cursor: pointer;
+    margin-top: 0.4vh;
+    opacity: 0.85;
+    text-decoration: underline;
+}
+
+.toggle-info-link:hover {
+    opacity: 1;
+}
+
 .add-condition-btn {
     margin-top: 0.8vh;
     background-color: #1b766c;
@@ -332,6 +351,36 @@ main {
 /*.      end conditions   */
 
 
+
+.condition-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6vh;
+    background-color: #fafafa;
+    border: 2px solid #1b766c;
+    border-radius: 10px;
+    padding: 10px 12px;
+    max-height: 20vh;
+    overflow-y: auto;
+}
+
+.condition-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #1b766c;
+    cursor: pointer;
+}
+
+.no-conditions-note {
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.no-conditions-note a {
+    color: #f5f2ec;
+}
 
 /* log */
 .all_log_display{
@@ -452,6 +501,7 @@ main {
     border-radius: 20px;
     background-color: rgb(215, 243, 252);
     padding: 2vw;
+    box-shadow: 0 14px 35px rgba(26, 58, 53, 0.3);
 }
 
 .summary-section h3 {

@@ -89,9 +89,16 @@ def init_databases():
         user_id INTEGER NOT NULL,
         condition_name TEXT NOT NULL,
         triggers TEXT NULL,
+        important_information TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
     )''')
+
+    # Migrate: add important_information column if it doesn't exist
+    try:
+        cursor.execute('ALTER TABLE conditions ADD COLUMN important_information TEXT NULL')
+    except sqlite3.OperationalError:
+        pass
 
 
     # Flare Ups table
@@ -103,6 +110,15 @@ def init_databases():
         flareup_comment TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
+    )''')
+
+    # Junction table linking flare ups to conditions
+    cursor.execute('''CREATE TABLE IF NOT EXISTS flare_up_conditions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        flare_up_id INTEGER NOT NULL,
+        condition_id INTEGER NOT NULL,
+        FOREIGN KEY (flare_up_id) REFERENCES flare_ups(id),
+        FOREIGN KEY (condition_id) REFERENCES conditions(id)
     )''')
 
     conn.commit()
@@ -147,17 +163,43 @@ def index():
 @app.route('/log')
 def log():
     user_logs = []
+    user_conditions = []
     if session.get('user_id'):
         conn = get_user_conn()
         cursor = conn.cursor()
+
+        # Fetch flare ups
         cursor.execute(
             'SELECT id, begin_time, end_time, flareup_comment FROM flare_ups WHERE user_id = ?',
             (session['user_id'],)
         )
         rows = cursor.fetchall()
-        user_logs = [(row[0], row[1], row[2], row[3] or '') for row in rows]
+
+        # Fetch which conditions are linked to each flare up
+        flare_up_ids = [row[0] for row in rows]
+        conditions_map = {}
+        if flare_up_ids:
+            placeholders = ','.join('?' * len(flare_up_ids))
+            cursor.execute(f'''
+                SELECT fuc.flare_up_id, c.condition_name
+                FROM flare_up_conditions fuc
+                JOIN conditions c ON c.id = fuc.condition_id
+                WHERE fuc.flare_up_id IN ({placeholders})
+            ''', flare_up_ids)
+            for fup_id, cname in cursor.fetchall():
+                conditions_map.setdefault(fup_id, []).append(cname)
+
+        user_logs = [(row[0], row[1], row[2], row[3] or '', conditions_map.get(row[0], [])) for row in rows]
+
+        # Fetch user's conditions for the form
+        cursor.execute(
+            'SELECT id, condition_name FROM conditions WHERE user_id = ?',
+            (session['user_id'],)
+        )
+        user_conditions = cursor.fetchall()
         conn.close()
-    return render_template('log.html', user_logs=user_logs)
+
+    return render_template('log.html', user_logs=user_logs, user_conditions=user_conditions)
 
 # handles the flare up logs into the database
 @app.route('/log_flareups', methods=['POST'])
@@ -174,12 +216,22 @@ def log_flareups():
         flash('Please provide both start and end times.', 'error')
         return redirect('/log')
 
+    selected_condition_ids = request.form.getlist('condition_ids')
+
     conn = get_user_conn()
     cursor = conn.cursor()
     cursor.execute(
         'INSERT INTO flare_ups (user_id, begin_time, end_time, flareup_comment) VALUES (?, ?, ?, ?)',
         (session['user_id'], begin_time, end_time, comment)
     )
+    flare_up_id = cursor.lastrowid
+
+    for condition_id in selected_condition_ids:
+        cursor.execute(
+            'INSERT INTO flare_up_conditions (flare_up_id, condition_id) VALUES (?, ?)',
+            (flare_up_id, condition_id)
+        )
+
     conn.commit()
     conn.close()
 
@@ -214,17 +266,33 @@ def summary():
 
     # Get user conditions
     cursor.execute(
-        'SELECT condition_name, triggers, created_at FROM conditions WHERE user_id = ? ORDER BY created_at',
+        'SELECT condition_name, triggers, important_information, created_at FROM conditions WHERE user_id = ? ORDER BY created_at',
         (session['user_id'],)
     )
     conditions = cursor.fetchall()
 
     # Get user flare ups
     cursor.execute(
-        'SELECT begin_time, end_time, flareup_comment, created_at FROM flare_ups WHERE user_id = ? ORDER BY begin_time DESC',
+        'SELECT id, begin_time, end_time, flareup_comment, created_at FROM flare_ups WHERE user_id = ? ORDER BY begin_time DESC',
         (session['user_id'],)
     )
-    flare_ups = cursor.fetchall()
+    flare_up_rows = cursor.fetchall()
+
+    # Get linked conditions for each flare up
+    flare_up_ids = [row[0] for row in flare_up_rows]
+    conditions_map = {}
+    if flare_up_ids:
+        placeholders = ','.join('?' * len(flare_up_ids))
+        cursor.execute(f'''
+            SELECT fuc.flare_up_id, c.condition_name
+            FROM flare_up_conditions fuc
+            JOIN conditions c ON c.id = fuc.condition_id
+            WHERE fuc.flare_up_id IN ({placeholders})
+        ''', flare_up_ids)
+        for fup_id, cname in cursor.fetchall():
+            conditions_map.setdefault(fup_id, []).append(cname)
+
+    flare_ups = [(row[1], row[2], row[3], ', '.join(conditions_map.get(row[0], []))) for row in flare_up_rows]
     conn.close()
 
     return render_template('summary.html', user_info=user_info, conditions=conditions, flare_ups=flare_ups)
@@ -248,17 +316,32 @@ def download_summary():
 
     # Get user conditions
     cursor.execute(
-        'SELECT condition_name, triggers, created_at FROM conditions WHERE user_id = ? ORDER BY created_at',
+        'SELECT condition_name, triggers, important_information, created_at FROM conditions WHERE user_id = ? ORDER BY created_at',
         (session['user_id'],)
     )
     conditions = cursor.fetchall()
 
-    # Get user flare ups
+    # Get user flare ups with linked conditions
     cursor.execute(
-        'SELECT begin_time, end_time, flareup_comment FROM flare_ups WHERE user_id = ? ORDER BY begin_time DESC',
+        'SELECT id, begin_time, end_time, flareup_comment FROM flare_ups WHERE user_id = ? ORDER BY begin_time DESC',
         (session['user_id'],)
     )
-    flare_ups = cursor.fetchall()
+    flare_up_rows = cursor.fetchall()
+
+    flare_up_ids = [row[0] for row in flare_up_rows]
+    conditions_map = {}
+    if flare_up_ids:
+        placeholders = ','.join('?' * len(flare_up_ids))
+        cursor.execute(f'''
+            SELECT fuc.flare_up_id, c.condition_name
+            FROM flare_up_conditions fuc
+            JOIN conditions c ON c.id = fuc.condition_id
+            WHERE fuc.flare_up_id IN ({placeholders})
+        ''', flare_up_ids)
+        for fup_id, cname in cursor.fetchall():
+            conditions_map.setdefault(fup_id, []).append(cname)
+
+    flare_ups = [(row[1], row[2], row[3], ', '.join(conditions_map.get(row[0], []))) for row in flare_up_rows]
     conn.close()
 
     # Create PDF in memory
@@ -314,14 +397,15 @@ def download_summary():
     # Conditions Section
     elements.append(Paragraph("My Conditions", heading_style))
     if conditions:
-        conditions_data = [['Condition', 'Triggers/Notes', 'Added On']]
+        conditions_data = [['Condition', 'Triggers', 'Important Information', 'Added On']]
         for condition in conditions:
             conditions_data.append([
                 condition[0],
                 condition[1] if condition[1] else '-',
-                condition[2][:10] if condition[2] else '-'
+                condition[2] if condition[2] else '-',
+                condition[3][:10] if condition[3] else '-'
             ])
-        conditions_table = Table(conditions_data, colWidths=[2*inch, 2.5*inch, 1.2*inch])
+        conditions_table = Table(conditions_data, colWidths=[1.5*inch, 1.5*inch, 1.8*inch, 1*inch])
         conditions_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5282')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -344,14 +428,15 @@ def download_summary():
     # Flare Ups Section
     elements.append(Paragraph("Flare Up Log", heading_style))
     if flare_ups:
-        flareup_data = [['Start Time', 'End Time', 'Notes']]
+        flareup_data = [['Conditions', 'Start Time', 'End Time', 'Notes']]
         for flare in flare_ups:
             flareup_data.append([
+                flare[3] if flare[3] else '-',
                 flare[0].replace('T', ' ') if flare[0] else '-',
                 flare[1].replace('T', ' ') if flare[1] else '-',
                 flare[2] if flare[2] else '-'
             ])
-        flareup_table = Table(flareup_data, colWidths=[1.8*inch, 1.8*inch, 2.1*inch])
+        flareup_table = Table(flareup_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.2*inch])
         flareup_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5282')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -408,8 +493,8 @@ def conditions():
             cursor = conn.cursor()
 
             for condition in selected_conditions:
-                # Get the trigger specific to this condition
                 trigger_text = request.form.get(f'trigger_{condition}', '')
+                important_info_text = request.form.get(f'important_info_{condition}', '')
 
                 # Check if user already has this condition
                 cursor.execute(
@@ -418,8 +503,8 @@ def conditions():
                 )
                 if not cursor.fetchone():
                     cursor.execute(
-                        'INSERT INTO conditions (user_id, condition_name, triggers) VALUES (?, ?, ?)',
-                        (session['user_id'], condition, trigger_text)
+                        'INSERT INTO conditions (user_id, condition_name, triggers, important_information) VALUES (?, ?, ?, ?)',
+                        (session['user_id'], condition, trigger_text, important_info_text)
                     )
 
             conn.commit()
@@ -433,11 +518,11 @@ def conditions():
         conn = get_user_conn()
         cursor = conn.cursor()
         cursor.execute(
-            'SELECT id, condition_name, triggers FROM conditions WHERE user_id = ?',
+            'SELECT id, condition_name, triggers, important_information FROM conditions WHERE user_id = ?',
             (session['user_id'],)
         )
         rows = cursor.fetchall()
-        user_conditions = [(row[0], row[1], row[2] or '') for row in rows]  # (id, name, triggers)
+        user_conditions = [(row[0], row[1], row[2] or '', row[3] or '') for row in rows]  # (id, name, triggers, important_info)
         user_condition_names = [row[1] for row in rows]
         conn.close()
 
