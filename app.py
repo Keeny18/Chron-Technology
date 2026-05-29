@@ -177,19 +177,21 @@ def log():
 
         # Fetch which conditions are linked to each flare up
         flare_up_ids = [row[0] for row in rows]
-        conditions_map = {}
+        conditions_name_map = {}
+        conditions_id_map = {}
         if flare_up_ids:
             placeholders = ','.join('?' * len(flare_up_ids))
             cursor.execute(f'''
-                SELECT fuc.flare_up_id, c.condition_name
+                SELECT fuc.flare_up_id, fuc.condition_id, c.condition_name
                 FROM flare_up_conditions fuc
                 JOIN conditions c ON c.id = fuc.condition_id
                 WHERE fuc.flare_up_id IN ({placeholders})
             ''', flare_up_ids)
-            for fup_id, cname in cursor.fetchall():
-                conditions_map.setdefault(fup_id, []).append(cname)
+            for fup_id, cid, cname in cursor.fetchall():
+                conditions_name_map.setdefault(fup_id, []).append(cname)
+                conditions_id_map.setdefault(fup_id, []).append(cid)
 
-        user_logs = [(row[0], row[1], row[2], row[3] or '', conditions_map.get(row[0], [])) for row in rows]
+        user_logs = [(row[0], row[1], row[2], row[3] or '', conditions_name_map.get(row[0], []), conditions_id_map.get(row[0], [])) for row in rows]
 
         # Fetch user's conditions for the form
         cursor.execute(
@@ -542,12 +544,74 @@ def delete_item(item_id):
 
     conn = get_user_conn()
     cursor = conn.cursor()
-    # Only delete if it belongs to the current user
     cursor.execute("DELETE FROM conditions WHERE id = ? AND user_id = ?", (item_id, session['user_id']))
     conn.commit()
     conn.close()
     flash('Condition deleted.', 'success')
     return redirect(url_for('conditions'))
+
+
+@app.route('/edit_condition/<int:item_id>', methods=['POST'])
+def edit_condition(item_id):
+    if not session.get('user_id'):
+        return redirect('/signin')
+
+    triggers = request.form.get('triggers', '')
+    important_info = request.form.get('important_info', '')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        'UPDATE conditions SET triggers = ?, important_information = ? WHERE id = ? AND user_id = ?',
+        (triggers, important_info, item_id, session['user_id'])
+    )
+    conn.commit()
+    conn.close()
+    flash('Condition updated.', 'success')
+    return redirect('/conditions')
+
+
+@app.route('/edit_flareup/<int:item_id>', methods=['POST'])
+def edit_flareup(item_id):
+    if not session.get('user_id'):
+        return redirect('/signin')
+
+    begin_time = request.form.get('flare_up_begun')
+    end_time = request.form.get('flare_up_end')
+    comment = request.form.get('flareup_information', '')
+    selected_condition_ids = request.form.getlist('condition_ids')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        'UPDATE flare_ups SET begin_time = ?, end_time = ?, flareup_comment = ? WHERE id = ? AND user_id = ?',
+        (begin_time, end_time, comment, item_id, session['user_id'])
+    )
+    cursor.execute('DELETE FROM flare_up_conditions WHERE flare_up_id = ?', (item_id,))
+    for condition_id in selected_condition_ids:
+        cursor.execute(
+            'INSERT INTO flare_up_conditions (flare_up_id, condition_id) VALUES (?, ?)',
+            (item_id, condition_id)
+        )
+    conn.commit()
+    conn.close()
+    flash('Flare up updated.', 'success')
+    return redirect('/log')
+
+
+@app.route('/delete_flareup/<int:item_id>', methods=['POST'])
+def delete_flareup(item_id):
+    if not session.get('user_id'):
+        return redirect('/signin')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM flare_up_conditions WHERE flare_up_id = ?', (item_id,))
+    cursor.execute('DELETE FROM flare_ups WHERE id = ? AND user_id = ?', (item_id, session['user_id']))
+    conn.commit()
+    conn.close()
+    flash('Flare up deleted.', 'success')
+    return redirect('/log')
 # _______________________ end conditions page _______________________
 
 

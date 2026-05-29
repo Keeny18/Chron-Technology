@@ -85,9 +85,28 @@
                             <td>{{ condition }}</td>
                             <td>{{ triggers if triggers else '-' }}</td>
                             <td>{{ important_info if important_info else '-' }}</td>
-                            <td>
-                                <form action="/delete/{{ id }}" method="POST">
+                            <td class="action-cell">
+                                <button type="button" class="edit-btn" onclick="toggleEditCondition({{ id }})">Edit</button>
+                                <form action="/delete/{{ id }}" method="POST" style="display:inline">
                                     <button type="submit" class="delete-btn">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr id="edit-condition-{{ id }}" style="display:none">
+                            <td colspan="4">
+                                <form action="/edit_condition/{{ id }}" method="POST" class="inline-edit-form">
+                                    <div class="log-form-group">
+                                        <label>Triggers</label>
+                                        <textarea name="triggers" class="trigger-input">{{ triggers }}</textarea>
+                                    </div>
+                                    <div class="log-form-group">
+                                        <label>Important Information</label>
+                                        <textarea name="important_info" class="trigger-input">{{ important_info }}</textarea>
+                                    </div>
+                                    <div class="inline-edit-actions">
+                                        <button type="submit" class="add-condition-btn">Save</button>
+                                        <button type="button" class="delete-btn" onclick="toggleEditCondition({{ id }})">Cancel</button>
+                                    </div>
                                 </form>
                             </td>
                         </tr>
@@ -106,6 +125,11 @@
     </footer>
 
     <script>
+        function toggleEditCondition(id) {
+            const row = document.getElementById('edit-condition-' + id);
+            row.style.display = row.style.display === 'none' ? '' : 'none';
+        }
+
         function filterConditions() {
             const searchTerm = document.getElementById('condition-search').value.toLowerCase();
             const items = document.querySelectorAll('.condition-item');

@@ -310,6 +310,52 @@ main {
     background-color: #a93226;
 }
 
+.edit-btn {
+    background-color: #2BB3A3;
+    color: #fafafa;
+    border: none;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.edit-btn:hover {
+    background-color: #2a7183;
+}
+
+.action-cell {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.action-cell .edit-btn,
+.action-cell form {
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.flareup-actions {
+    display: flex;
+    gap: 0.5vw;
+    padding: 0.5vh 1vw 0.8vh;
+    align-items: center;
+}
+
+.inline-edit-form {
+    padding: 1vh 1vw;
+    border-top: 2px solid #2BB3A3;
+    background-color: rgba(43, 179, 163, 0.05);
+    border-radius: 0 0 18px 18px;
+}
+
+.inline-edit-actions {
+    display: flex;
+    gap: 0.5vw;
+    margin-top: 0.8vh;
+}
+
 .summary-section {
     margin-top: 2vh;
 }
