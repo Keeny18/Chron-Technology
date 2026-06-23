@@ -703,8 +703,62 @@ def signout():
 # _______________________ account page _______________________
 @app.route('/account')
 def account():
-    session.clear()
-    return render_template('account.html')
+    if not session.get('user_id'):
+        return redirect('/signin')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT first_name, last_name, email, date_of_birth FROM users WHERE id = ?',
+        (session['user_id'],)
+    )
+    user = cursor.fetchone()
+    conn.close()
+    user_info = {'first_name': user[0], 'last_name': user[1], 'email': user[2], 'date_of_birth': user[3]}
+    return render_template('account.html', user_info=user_info)
+
+
+@app.route('/update_account', methods=['POST'])
+def update_account():
+    if not session.get('user_id'):
+        return redirect('/signin')
+
+    first_name = request.form.get('first_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
+    email = request.form.get('email', '').lower().strip()
+    date_of_birth = request.form.get('date_of_birth', '')
+    new_password = request.form.get('new_password', '')
+
+    if not is_valid_name(first_name) or not is_valid_name(last_name):
+        flash('Please enter a valid name.', 'error')
+        return redirect('/account')
+    if not is_valid_email(email):
+        flash('Please enter a valid email address.', 'error')
+        return redirect('/account')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+
+    if new_password:
+        if not is_valid_password(new_password):
+            flash('Password must be at least 8 characters with a letter and number.', 'error')
+            conn.close()
+            return redirect('/account')
+        cursor.execute(
+            'UPDATE users SET first_name=?, last_name=?, email=?, date_of_birth=?, password=? WHERE id=?',
+            (first_name, last_name, email, date_of_birth, generate_password_hash(new_password), session['user_id'])
+        )
+    else:
+        cursor.execute(
+            'UPDATE users SET first_name=?, last_name=?, email=?, date_of_birth=? WHERE id=?',
+            (first_name, last_name, email, date_of_birth, session['user_id'])
+        )
+
+    conn.commit()
+    conn.close()
+    session['first_name'] = first_name
+    flash('Account updated successfully.', 'success')
+    return redirect('/account')
 # _______________________ end account page _______________________
 
 

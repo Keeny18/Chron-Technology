@@ -85,10 +85,16 @@ main {
 }
 
 .notactive_page {
-    color: #fafafa; 
+    color: #fafafa;
     text-decoration: none;
     padding-left: 1vw;
     padding-right: 1vw;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+}
+
+.notactive_page:hover {
+    background-color: #1b766c;
 }
 /* dropdown */
 .dropdown {
@@ -524,13 +530,75 @@ main {
 
 
 
-.signin_signup_box{
-    background-color: #1b766c;
+.signin_signup_box {
+    background-color: rgb(107, 163, 182);
+    border: 2px solid #1b766c;
+    border-radius: 20px;
+    box-shadow: 0 14px 35px rgba(26, 58, 53, 0.3);
+    max-width: 480px;
+    margin: 2vh auto;
 }
 
-.signin_signup_content{
+.signin_signup_content {
     color: #fafafa;
-    padding: 20px;
+    padding: 2vw;
+}
+
+.signin_signup_content .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4vh;
+    margin-bottom: 1.5vh;
+}
+
+.signin_signup_content label {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.signin_signup_content input,
+.auth-input {
+    padding: 8px 12px;
+    border: 2px solid #1b766c;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: #fafafa;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.signin_submit {
+    background-color: #1b766c;
+    color: #fafafa;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 0.5vh;
+}
+
+.signin_submit:hover {
+    background-color: #2a7183;
+}
+
+.signinlink {
+    list-style: none;
+    padding: 0;
+    margin-top: 1.5vh;
+}
+
+.signinlink a {
+    color: #f5f2ec;
+    text-decoration: underline;
+    font-size: 14px;
+}
+
+.signinlink a:hover {
+    color: #fafafa;
 }
 
 
@@ -539,7 +607,6 @@ main {
     display: flex;
     flex-direction: column;
     gap: 2vh;
-    padding: 1vw;
 }
 
 .summary-section {

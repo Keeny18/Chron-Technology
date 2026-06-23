@@ -1,1 +1,104 @@
-<p>allow editting and viewing of account details</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chron Technology</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="index_page">
+    <header>
+        <nav>
+            <h1 class="websitelogo">Chron Technology</h1>
+        </nav>
+
+        <div class="topnav">
+            <div class="nav-left">
+                <a class="notactive_page" href="/">Home</a>
+                {% if session.get('user_id') %}
+                <a class="notactive_page" href="conditions">Conditions</a>
+                <a class="notactive_page" href="log">Log</a>
+                <a class="notactive_page" href="summary">Summary</a>
+                <a class="notactive_page" href="contact">Contact</a>
+                {% endif %}
+            </div>
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="dropdown">
+                    <span class="dropdown-toggle">Account</span>
+                    <div class="dropdown-menu">
+                        <a href="/account">My Account</a>
+                        <a href="/signout">Sign Out</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <h2 class="topPageHeadings">My Account</h2>
+        </section>
+
+        <div class="summary-section">
+            <h3>Your Details
+                <button type="button" class="edit-btn" style="float: right;" onclick="toggleAccountEdit()">Edit</button>
+            </h3>
+            <div id="account-display">
+                <p><strong>First Name:</strong> {{ user_info.first_name }}</p>
+                <p><strong>Last Name:</strong> {{ user_info.last_name }}</p>
+                <p><strong>Email:</strong> {{ user_info.email }}</p>
+                <p><strong>Date of Birth:</strong> {{ user_info.date_of_birth }}</p>
+            </div>
+
+            <div id="account-edit" style="display: none;" class="inline-edit-form">
+                <form method="POST" action="/update_account">
+                    <div class="log-form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" name="first_name" value="{{ user_info.first_name }}" class="auth-input" required>
+                    </div>
+                    <div class="log-form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" value="{{ user_info.last_name }}" class="auth-input" required>
+                    </div>
+                    <div class="log-form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ user_info.email }}" class="auth-input" required>
+                    </div>
+                    <div class="log-form-group">
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" value="{{ user_info.date_of_birth }}" class="auth-input" required>
+                    </div>
+                    <div class="log-form-group">
+                        <label for="new_password">New Password <span style="font-weight: normal; opacity: 0.8;">(optional — leave blank to keep current)</span></label>
+                        <input type="password" id="new_password" name="new_password" placeholder="Enter new password" class="auth-input">
+                    </div>
+                    <div class="inline-edit-actions">
+                        <button type="submit" class="add-condition-btn">Save Changes</button>
+                        <button type="button" class="delete-btn" onclick="toggleAccountEdit()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Chron Technology. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        function toggleAccountEdit() {
+            const display = document.getElementById('account-display');
+            const edit = document.getElementById('account-edit');
+            const isEditing = edit.style.display !== 'none';
+            display.style.display = isEditing ? '' : 'none';
+            edit.style.display = isEditing ? 'none' : '';
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date_of_birth').max = today;
+    </script>
+</body>
+</html>
