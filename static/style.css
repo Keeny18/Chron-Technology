@@ -33,24 +33,10 @@ header {
     object-fit: contain;
 }
 
+
 .topPageHeadings {
     display: block;
     padding-bottom: 1vh;
-}
-
-.index_page {
-    background-color: #f5f2ec;
-    background-image: url('/static/images/chron_tech_background.png');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding-left: 1vw;
-    padding-right: 1vw;
 }
 
 main {
@@ -149,6 +135,37 @@ main {
 
 
 /*.   index.     */
+.index_page {
+    background-color: #f5f2ec;
+    background-image: url('/static/images/chron_tech_background.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding-left: 1vw;
+    padding-right: 1vw;
+}
+
+.welcome_name_div {
+    
+}
+
+.spoonie_description_txt {
+    padding-bottom: 2%;
+    font-size: 17.5px;
+}
+
+.highlightedh2 {
+    color:#1b766c;
+    text-decoration: underline;
+    text-decoration-color:#1b766c;
+}
+
+
 .button_links_collection {
     display: flex;
     flex-direction: column;
