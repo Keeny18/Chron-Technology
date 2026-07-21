@@ -1,7 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Nunito', sans-serif;
+    overflow-x: hidden;
 }
 
 header {
@@ -18,7 +23,14 @@ header {
 }
 
 .websitelogo {
-    padding-left: 2vw;
+    height: 80px;
+    width: auto;
+    max-height: 80px;
+    max-width: 360px;
+    margin-left: 2vw;
+    display: inline-block;
+    vertical-align: middle;
+    object-fit: contain;
 }
 
 .topPageHeadings {
@@ -47,9 +59,6 @@ main {
 }
 
 
-.websitelogo{
-    color: #fafafa;
-}
 
 
 /* nav bar */
@@ -668,7 +677,6 @@ main {
     padding: 10px 20px;
     border-radius: 10px;
     text-decoration: none;
-    margin-left: 2vw;
     transition: background-color 0.3s;
 }
 
@@ -678,4 +686,172 @@ main {
 
 section h2 {
     display: inline;
+}
+
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+
+    main {
+        margin-top: 22vh;
+        padding-bottom: 3vh;
+    }
+
+    /* Nav */
+    .topnav {
+        height: auto;
+        min-height: 5vh;
+        padding: 6px 0;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .nav-left {
+        padding-left: 3vw;
+        flex-wrap: wrap;
+        gap: 2px;
+    }
+
+    .nav-right {
+        padding-right: 3vw;
+    }
+
+    .active_page, .notactive_page {
+        font-size: 13px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .dropdown-toggle {
+        font-size: 13px;
+    }
+
+    /* Index buttons — stack to single column */
+    .button_links_collection {
+        padding: 3vh 5vw;
+    }
+
+    .button_links_collection > div {
+        flex-direction: column;
+        align-items: center;
+        gap: 2vh;
+    }
+
+    .index_button_links {
+        width: 80vw;
+        height: 18vh;
+    }
+
+    .symbol_index_button {
+        font-size: 2rem;
+    }
+
+    /* Cards */
+    .add_condition,
+    .add_log_display,
+    .all_log_display,
+    .all_condition_display,
+    .summary-section {
+        padding: 16px;
+        max-width: 100%;
+    }
+
+    /* Tables — scroll at the table level */
+    .summary-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        width: 100%;
+        min-width: unset;
+    }
+
+    .summary-table td {
+        white-space: normal;
+        min-width: 100px;
+    }
+
+    /* Forms */
+    .add_log_display input[type="datetime-local"],
+    .add_log_display textarea,
+    .auth-input,
+    .signin_signup_content input {
+        font-size: 16px; /* prevents iOS zoom on focus */
+    }
+
+    /* Condition checkboxes */
+    .condition-checkboxes {
+        max-height: 30vh;
+    }
+
+    /* Sign in/up */
+    .signin_signup_box {
+        max-width: 95vw;
+    }
+
+    .signin_signup_content {
+        padding: 16px;
+    }
+
+    /* Account/summary info */
+    .summary-container {
+        gap: 1.5vh;
+    }
+
+
+    /* inline edit forms */
+    .inline-edit-form {
+        padding: 12px;
+    }
+
+    /* Prevent any card content overflowing */
+    .individual_flareup,
+    .individual_condition_trigger {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .trigger-input,
+    .add_log_display input[type="datetime-local"],
+    .add_log_display textarea,
+    #condition-search {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .condition-item {
+        word-break: break-word;
+    }
+}
+
+@media (max-width: 480px) {
+
+    main {
+        margin-top: 26vh;
+    }
+
+    .websitelogo {
+        font-size: 1.1rem;
+        padding-left: 3vw;
+    }
+
+    .active_page, .notactive_page {
+        font-size: 12px;
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .index_button_links {
+        width: 90vw;
+        height: 16vh;
+    }
+
+    .summary-table th,
+    .summary-table td {
+        padding: 7px 8px;
+        font-size: 13px;
+    }
+
+    .flareup-actions {
+        flex-wrap: wrap;
+    }
 }
