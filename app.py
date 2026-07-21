@@ -2,16 +2,43 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import re
+import os
+import secrets
 from io import BytesIO
 from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
 
 app = Flask(__name__)
-app.secret_key = 'admin'
+
+# Persistent secret key: reads from env var, then local file, then generates one
+_key_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.secret_key')
+if 'SECRET_KEY' in os.environ:
+    app.secret_key = os.environ['SECRET_KEY']
+elif os.path.exists(_key_file):
+    with open(_key_file) as _f:
+        app.secret_key = _f.read().strip()
+else:
+    app.secret_key = secrets.token_hex(32)
+    with open(_key_file, 'w') as _f:
+        _f.write(app.secret_key)
+
+# Session cookie security
+app.config['SESSION_COOKIE_HTTPONLY'] = True   # JS cannot access the session cookie
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Blocks cross-site request forgery
+# Set SESSION_COOKIE_SECURE = True in production once served over HTTPS
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    return response
 
 USER_DB = 'users.db'
 
@@ -73,8 +100,7 @@ def init_databases():
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        date_of_birth DATE NOT NULL
+        password TEXT NOT NULL
     )''')
 
     # Migrate: rename illnesses table to conditions if it exists
@@ -100,6 +126,25 @@ def init_databases():
     except sqlite3.OperationalError:
         pass
 
+    # Migrate: drop date_of_birth if it exists
+    try:
+        cursor.execute('ALTER TABLE users DROP COLUMN date_of_birth')
+    except sqlite3.OperationalError:
+        pass
+
+    # Migrate: add email verification columns
+    for col in [
+        'ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0',
+        'ALTER TABLE users ADD COLUMN verification_token TEXT',
+        'ALTER TABLE users ADD COLUMN token_expires_at TIMESTAMP',
+    ]:
+        try:
+            cursor.execute(col)
+        except sqlite3.OperationalError:
+            pass
+    # Mark existing accounts (created before this feature) as already verified
+    cursor.execute("UPDATE users SET is_verified = 1 WHERE verification_token IS NULL AND is_verified = 0")
+
 
     # Flare Ups table
     cursor.execute('''CREATE TABLE IF NOT EXISTS flare_ups (
@@ -121,6 +166,20 @@ def init_databases():
         FOREIGN KEY (condition_id) REFERENCES conditions(id)
     )''')
 
+    # Contact page content table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS contact_content (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )''')
+    defaults = [
+        ('contact_email', 'spoonie.chronic.manager@gmail.com'),
+        ('about_name', 'Jackson Keen'),
+        ('about_intro', 'I am a solo developer trying to use my programming abilities for good and make a difference.'),
+        ('about_mission', 'I have been inspired to focus heavily on developing a chronic condition manager due to the lack of free services available for those with chronic conditions. This has been brought to my attention through the struggles faced by those closest to me and their limited support from software online.')
+    ]
+    for key, value in defaults:
+        cursor.execute('INSERT OR IGNORE INTO contact_content (key, value) VALUES (?, ?)', (key, value))
+
     conn.commit()
     conn.close()
 init_databases()
@@ -139,8 +198,22 @@ def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return isinstance(email, str) and re.match(pattern, email)
 
-def is_valid_password(password):
-    return isinstance(password, str) and len(password) >= 8 and re.search(r"[a-zA-Z]", password) and re.search(r"[0-9]", password)
+def get_password_error(password):
+    if not isinstance(password, str):
+        return 'Invalid password.'
+    if len(password) < 8:
+        return 'Password must be at least 8 characters long.'
+    if len(password) > 64:
+        return 'Password must be no more than 64 characters long.'
+    if not re.search(r'[A-Z]', password):
+        return 'Password must contain at least one uppercase letter.'
+    if not re.search(r'[a-z]', password):
+        return 'Password must contain at least one lowercase letter.'
+    if not re.search(r'[0-9]', password):
+        return 'Password must contain at least one number.'
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>?/\\|`~]', password):
+        return 'Password must contain at least one special character (e.g. !@#$%).'
+    return None
 
 def is_valid_name(name):
     return isinstance(name, str) and len(name.strip()) >= 1
@@ -243,6 +316,15 @@ def log_flareups():
 
 
 
+
+# _____________________ Check-In page _______________________
+@app.route('/checkin')
+def checkin():
+    return render_template('checkin.html')
+# _______________________End Check-In page _______________________
+
+
+
 # _______________________ Summary page _______________________
 @app.route('/summary')
 def summary():
@@ -255,7 +337,7 @@ def summary():
 
     # Get user info (excluding password)
     cursor.execute(
-        'SELECT first_name, last_name, email, date_of_birth FROM users WHERE id = ?',
+        'SELECT first_name, last_name, email FROM users WHERE id = ?',
         (session['user_id'],)
     )
     user = cursor.fetchone()
@@ -263,7 +345,6 @@ def summary():
         'first_name': user[0],
         'last_name': user[1],
         'email': user[2],
-        'date_of_birth': user[3]
     }
 
     # Get user conditions
@@ -311,7 +392,7 @@ def download_summary():
 
     # Get user info (excluding password)
     cursor.execute(
-        'SELECT first_name, last_name, email, date_of_birth FROM users WHERE id = ?',
+        'SELECT first_name, last_name, email FROM users WHERE id = ?',
         (session['user_id'],)
     )
     user = cursor.fetchone()
@@ -350,118 +431,123 @@ def download_summary():
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
 
+    # Usable width: 8.5in - 1in left - 1in right = 6.5in
+    usable_width = 6.5 * inch
+
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        alignment=1,
-        textColor=colors.HexColor('#333333')
-    )
     heading_style = ParagraphStyle(
         'CustomHeading',
         parent=styles['Heading2'],
-        fontSize=16,
-        spaceBefore=20,
-        spaceAfter=10,
-        textColor=colors.HexColor('#2c5282')
+        fontSize=14,
+        spaceBefore=16,
+        spaceAfter=8,
+        textColor=colors.HexColor('#1b766c')
     )
-    normal_style = styles['Normal']
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=10, leading=13)
+    header_cell_style = ParagraphStyle('HeaderCell', parent=styles['Normal'], fontSize=10,
+                                       leading=13, textColor=colors.white, fontName='Helvetica-Bold')
+    date_style = ParagraphStyle('Date', parent=styles['Normal'], fontSize=10, alignment=1)
+    footer_style = ParagraphStyle('Footer', parent=styles['Normal'], fontSize=9, textColor=colors.gray, alignment=1)
+
+    table_header_bg = colors.HexColor('#1b766c')
+    table_row_bg = colors.HexColor('#f0faf8')
+    table_alt_bg = colors.white
+    table_grid = colors.HexColor('#2BB3A3')
+
+    def make_table_style():
+        return TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), table_header_bg),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [table_alt_bg, table_row_bg]),
+            ('GRID', (0, 0), (-1, -1), 0.5, table_grid),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ])
 
     elements = []
 
-    # Title
-    elements.append(Paragraph("Health Summary Report", title_style))
-    elements.append(Paragraph(f"Generated on {datetime.now().strftime('%B %d, %Y')}", styles['Normal']))
-    elements.append(Spacer(1, 20))
-    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#2c5282')))
-    elements.append(Spacer(1, 20))
+    # Logo
+    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images', 'spoonie_logo_black.png')
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=2.2*inch, height=0.75*inch)
+        logo.hAlign = 'CENTER'
+        elements.append(logo)
+        elements.append(Spacer(1, 8))
 
-    # User Information Section
+    elements.append(HRFlowable(width="100%", thickness=2, color=colors.HexColor('#1b766c')))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"Health Summary — Generated {datetime.now().strftime('%d %B %Y')}", date_style))
+    elements.append(Spacer(1, 16))
+
+    # Personal Information
     elements.append(Paragraph("Personal Information", heading_style))
     user_data = [
-        ['Name:', f"{user[0]} {user[1]}"],
-        ['Email:', user[2]],
-        ['Date of Birth:', user[3]]
+        [Paragraph('<b>Name</b>', cell_style), Paragraph(f"{user[0]} {user[1]}", cell_style)],
+        [Paragraph('<b>Email</b>', cell_style), Paragraph(user[2], cell_style)],
     ]
-    user_table = Table(user_data, colWidths=[1.5*inch, 4*inch])
+    user_table = Table(user_data, colWidths=[1.5*inch, usable_width - 1.5*inch])
     user_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 11),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#2BB3A3')),
     ]))
     elements.append(user_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 16))
 
-    # Conditions Section
+    # Conditions
     elements.append(Paragraph("My Conditions", heading_style))
     if conditions:
-        conditions_data = [['Condition', 'Triggers', 'Important Information', 'Added On']]
-        for condition in conditions:
+        col_w = [1.4*inch, 1.7*inch, 2.1*inch, 1.3*inch]
+        conditions_data = [[
+            Paragraph('Condition', header_cell_style),
+            Paragraph('Triggers', header_cell_style),
+            Paragraph('Important Information', header_cell_style),
+            Paragraph('Added On', header_cell_style),
+        ]]
+        for c in conditions:
             conditions_data.append([
-                condition[0],
-                condition[1] if condition[1] else '-',
-                condition[2] if condition[2] else '-',
-                condition[3][:10] if condition[3] else '-'
+                Paragraph(c[0] or '-', cell_style),
+                Paragraph(c[1] or '-', cell_style),
+                Paragraph(c[2] or '-', cell_style),
+                Paragraph(c[3][:10] if c[3] else '-', cell_style),
             ])
-        conditions_table = Table(conditions_data, colWidths=[1.5*inch, 1.5*inch, 1.8*inch, 1*inch])
-        conditions_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5282')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-            ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ]))
+        conditions_table = Table(conditions_data, colWidths=col_w)
+        conditions_table.setStyle(make_table_style())
         elements.append(conditions_table)
     else:
-        elements.append(Paragraph("No conditions recorded yet.", normal_style))
-    elements.append(Spacer(1, 20))
+        elements.append(Paragraph("No conditions recorded yet.", cell_style))
+    elements.append(Spacer(1, 16))
 
-    # Flare Ups Section
+    # Flare Up Log
     elements.append(Paragraph("Flare Up Log", heading_style))
     if flare_ups:
-        flareup_data = [['Conditions', 'Start Time', 'End Time', 'Notes']]
-        for flare in flare_ups:
+        col_w = [1.6*inch, 1.5*inch, 1.5*inch, 1.9*inch]
+        flareup_data = [[
+            Paragraph('Conditions', header_cell_style),
+            Paragraph('Start Time', header_cell_style),
+            Paragraph('End Time', header_cell_style),
+            Paragraph('Notes', header_cell_style),
+        ]]
+        for f in flare_ups:
             flareup_data.append([
-                flare[3] if flare[3] else '-',
-                flare[0].replace('T', ' ') if flare[0] else '-',
-                flare[1].replace('T', ' ') if flare[1] else '-',
-                flare[2] if flare[2] else '-'
+                Paragraph(f[3] or '-', cell_style),
+                Paragraph(f[0].replace('T', ' ') if f[0] else '-', cell_style),
+                Paragraph(f[1].replace('T', ' ') if f[1] else '-', cell_style),
+                Paragraph(f[2] or '-', cell_style),
             ])
-        flareup_table = Table(flareup_data, colWidths=[1.5*inch, 1.5*inch, 1.5*inch, 1.2*inch])
-        flareup_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5282')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-            ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ]))
+        flareup_table = Table(flareup_data, colWidths=col_w)
+        flareup_table.setStyle(make_table_style())
         elements.append(flareup_table)
     else:
-        elements.append(Paragraph("No flare ups logged yet.", normal_style))
+        elements.append(Paragraph("No flare ups logged yet.", cell_style))
 
     # Footer
-    elements.append(Spacer(1, 40))
-    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0')))
-    elements.append(Spacer(1, 10))
-    footer_style = ParagraphStyle('Footer', parent=styles['Normal'], fontSize=9, textColor=colors.gray, alignment=1)
+    elements.append(Spacer(1, 30))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#2BB3A3')))
+    elements.append(Spacer(1, 8))
     elements.append(Paragraph("Generated by Spoonie", footer_style))
 
     doc.build(elements)
@@ -473,9 +559,35 @@ def download_summary():
 
 
 # _______________________ contact page _______________________
+ADMIN_EMAIL = 'spoonie.chronic.manager@gmail.com'
+
 @app.route('/contact')
 def contact():
-    return render_template('contact.html')
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute('SELECT key, value FROM contact_content')
+    content = dict(cursor.fetchall())
+    conn.close()
+    is_admin = session.get('email') == ADMIN_EMAIL
+    return render_template('contact.html', content=content, is_admin=is_admin)
+
+
+@app.route('/update_contact', methods=['POST'])
+def update_contact():
+    if session.get('email') != ADMIN_EMAIL:
+        flash('Unauthorised.', 'error')
+        return redirect('/contact')
+
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    for key in ['contact_email', 'about_name', 'about_intro', 'about_mission']:
+        value = request.form.get(key, '').strip()
+        if value:
+            cursor.execute('UPDATE contact_content SET value = ? WHERE key = ?', (value, key))
+    conn.commit()
+    conn.close()
+    flash('Contact page updated.', 'success')
+    return redirect('/contact')
 # _______________________ end contact page _______________________
 
 
@@ -625,7 +737,10 @@ def signin():
 
         conn = get_user_conn()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+        cursor.execute(
+            'SELECT id, first_name, last_name, email, password FROM users WHERE email = ?',
+            (email,)
+        )
         user = cursor.fetchone()
         conn.close()
 
@@ -648,7 +763,6 @@ def signup():
         last_name = request.form['last_name']
         email = request.form['email'].lower().strip()
         password = request.form['password']
-        date_of_birth = request.form['date_of_birth']
         hashed_password = generate_password_hash(password)
 
         conn = get_user_conn()
@@ -667,27 +781,30 @@ def signup():
         if not is_valid_email(email):
             flash('Please enter a valid email address.', 'error')
             return redirect('/signup')
-        if not is_valid_password(password):
-            flash('Invalid password. Ensure it is at least 8 characters long and contains at least one letter and one number.', 'error')
+        password_error = get_password_error(password)
+        if password_error:
+            flash(password_error, 'error')
             return redirect('/signup')
-        if not date_of_birth:
-            flash('Please enter your date of birth.', 'error')
-            return redirect('/signup')
-
         if user_exists:
             flash('An account with this email already exists.', 'error')
         else:
             cursor.execute(
-                'INSERT INTO users (first_name, last_name, email, password, date_of_birth) VALUES (?, ?, ?, ?, ?)',
-                (first_name.strip(), last_name.strip(), email, hashed_password, date_of_birth)
+                'INSERT INTO users (first_name, last_name, email, password, is_verified) VALUES (?, ?, ?, ?, 1)',
+                (first_name.strip(), last_name.strip(), email, hashed_password)
             )
             conn.commit()
-            flash('Registration successful! Please sign in.', 'success')
+            user_id = cursor.lastrowid
             conn.close()
-            return redirect('/signin')
+            session['user_id'] = user_id
+            session['first_name'] = first_name.strip()
+            session['email'] = email
+            flash('Welcome to Spoonie!', 'success')
+            return redirect('/')
         conn.close()
     return render_template('signup.html')
 # _______________________ end sign up page _______________________
+
+
 
 
 
@@ -709,12 +826,12 @@ def account():
     conn = get_user_conn()
     cursor = conn.cursor()
     cursor.execute(
-        'SELECT first_name, last_name, email, date_of_birth FROM users WHERE id = ?',
+        'SELECT first_name, last_name, email FROM users WHERE id = ?',
         (session['user_id'],)
     )
     user = cursor.fetchone()
     conn.close()
-    user_info = {'first_name': user[0], 'last_name': user[1], 'email': user[2], 'date_of_birth': user[3]}
+    user_info = {'first_name': user[0], 'last_name': user[1], 'email': user[2]}
     return render_template('account.html', user_info=user_info)
 
 
@@ -726,7 +843,6 @@ def update_account():
     first_name = request.form.get('first_name', '').strip()
     last_name = request.form.get('last_name', '').strip()
     email = request.form.get('email', '').lower().strip()
-    date_of_birth = request.form.get('date_of_birth', '')
     new_password = request.form.get('new_password', '')
 
     if not is_valid_name(first_name) or not is_valid_name(last_name):
@@ -740,18 +856,19 @@ def update_account():
     cursor = conn.cursor()
 
     if new_password:
-        if not is_valid_password(new_password):
-            flash('Password must be at least 8 characters with a letter and number.', 'error')
+        password_error = get_password_error(new_password)
+        if password_error:
+            flash(password_error, 'error')
             conn.close()
             return redirect('/account')
         cursor.execute(
-            'UPDATE users SET first_name=?, last_name=?, email=?, date_of_birth=?, password=? WHERE id=?',
-            (first_name, last_name, email, date_of_birth, generate_password_hash(new_password), session['user_id'])
+            'UPDATE users SET first_name=?, last_name=?, email=?, password=? WHERE id=?',
+            (first_name, last_name, email, generate_password_hash(new_password), session['user_id'])
         )
     else:
         cursor.execute(
-            'UPDATE users SET first_name=?, last_name=?, email=?, date_of_birth=? WHERE id=?',
-            (first_name, last_name, email, date_of_birth, session['user_id'])
+            'UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?',
+            (first_name, last_name, email, session['user_id'])
         )
 
     conn.commit()
@@ -762,5 +879,25 @@ def update_account():
 # _______________________ end account page _______________________
 
 
+# Admin-only: manually verify an account by email
+@app.route('/admin/verify_user', methods=['POST'])
+def admin_verify_user():
+    if session.get('email') != ADMIN_EMAIL:
+        flash('Unauthorised.', 'error')
+        return redirect('/')
+    email = request.form.get('email', '').lower().strip()
+    conn = get_user_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        'UPDATE users SET is_verified = 1, verification_token = NULL, token_expires_at = NULL WHERE email = ?',
+        (email,)
+    )
+    conn.commit()
+    conn.close()
+    flash(f'{email} has been manually verified.', 'success')
+    return redirect('/contact')
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(debug=debug)

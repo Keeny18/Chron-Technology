@@ -23,9 +23,9 @@ header {
 }
 
 .websitelogo {
-    height: 80px;
+    height: 90px;
     width: auto;
-    max-height: 80px;
+    max-height: 90px;
     max-width: 360px;
     margin-left: 2vw;
     display: inline-block;
@@ -594,6 +594,49 @@ main {
     background-color: #2a7183;
 }
 
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: #fff;
+    color: #333;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.5vh;
+}
+
+.google-btn:hover {
+    background-color: #f5f5f5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.google-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1.2vh 0;
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+}
+
+.google-divider::before,
+.google-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: rgba(255,255,255,0.4);
+}
+
 .signinlink {
     list-style: none;
     padding: 0;
@@ -686,6 +729,38 @@ main {
 
 section h2 {
     display: inline;
+}
+
+/* ===== FLASH TOASTS ===== */
+.flash-container {
+    position: fixed;
+    top: 140px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 340px;
+    pointer-events: none;
+}
+
+.flash-message {
+    padding: 14px 16px;
+    border-radius: 12px;
+    color: #fafafa;
+    font-size: 14px;
+    font-family: inherit;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    animation: flashSlideIn 0.3s ease;
+    pointer-events: all;
+}
+
+.flash-error   { background-color: #c0392b; }
+.flash-success { background-color: #1b766c; }
+
+@keyframes flashSlideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
 }
 
 

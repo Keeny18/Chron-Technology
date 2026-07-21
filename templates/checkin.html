@@ -22,41 +22,41 @@
     <header>
         <nav>
             <a href="/"><img src="/static/images/spoonielogo.png" alt="Spoonie" class="websitelogo" height="80"></a>
-            <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
         </nav>
 
-        <!-- _______________________ nav bar _______________________ -->
         <div class="topnav">
             <div class="nav-left">
                 <a class="notactive_page" href="/">Home</a>
+                {% if session.get('user_id') %}
+                <a class="notactive_page" href="conditions">Conditions</a>
+                <a class="notactive_page" href="log">Log</a>
+                <a class="active_page" href="checkin">Check-In</a>
+                <a class="notactive_page" href="summary">Summary</a>
+                <a class="notactive_page" href="contact">Contact</a>
+                {% endif %}
+            </div>
+            <div class="nav-right">
+                {% if session.get('user_id') %}
+                <div class="dropdown">
+                    <span class="dropdown-toggle">Account</span>
+                    <div class="dropdown-menu">
+                        <a href="/account">My Account</a>
+                        <a href="/signout">Sign Out</a>
+                    </div>
+                </div>
+                {% else %}
+                <a class="notactive_page" href="signup">SignUp</a>
+                <a class="notactive_page" href="signin">SignIn</a>
+                {% endif %}
             </div>
         </div>
-        <!-- _______________________ end nav bar _______________________ -->
     </header>
 
     <main>
-        <section style="text-align: center">
-            <h2 class="topPageHeadings">SignIn</h2>
+        <section>
+            <h2 class="topPageHeadings">Check-In</h2>
         </section>
 
-        <div class="signin_signup_box">
-            <div class="signin_signup_content">
-                <form action="/signin" method="post">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input name="email" id="email" placeholder="Email" type="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input name="password" id="password" placeholder="Password" type="password" required>
-                    </div>
-                    <button class="signin_submit" type="submit">SignIn</button>
-                </form>
-                <ul class="signinlink">
-                    <a href="/signup" id="signup_submit">SIGN UP</a>
-                </ul>
-            </div>
-        </div>
     </main>
 
     <footer>

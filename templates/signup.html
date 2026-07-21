@@ -5,8 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spoonie</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" href="/static/images/icon_logo.png">
 </head>
 <body class="index_page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
     <header>
         <nav>
             <a href="/"><img src="/static/images/spoonielogo.png" alt="Spoonie" class="websitelogo" height="80"></a>
@@ -40,11 +52,8 @@
                 <label for="email">Email:</label>
                 <input name="email" id="email" placeholder="Email" type="email" required>
 
-                <label for="date_of_birth">Date of Birth:</label>
-                <input name="date_of_birth" id="date_of_birth" type="date" required>
-
                 <label for="password">Password:</label>
-                <input name="password" id="password" placeholder="Password" type="password" required>
+                <input name="password" id="password" placeholder="Min 8 chars, upper, lower, number, special (!@#$%...)" type="password" required>
 
                 <button class="signin_submit" type="submit">SignUp</button>
             </form>
@@ -62,8 +71,13 @@
 
     <script src="script.js"></script>
     <script>
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date_of_birth').max = today;
+        setTimeout(function() {
+            document.querySelectorAll('.flash-message').forEach(function(el) {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(function() { el.remove(); }, 500);
+            });
+        }, 4000);
     </script>
 </body>
 </html>

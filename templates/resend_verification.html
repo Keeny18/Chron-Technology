@@ -22,38 +22,31 @@
     <header>
         <nav>
             <a href="/"><img src="/static/images/spoonielogo.png" alt="Spoonie" class="websitelogo" height="80"></a>
-            <!-- <img src="/static/images/header_image.png" alt="Header image" class="header-image"> -->
         </nav>
-
-        <!-- _______________________ nav bar _______________________ -->
         <div class="topnav">
             <div class="nav-left">
                 <a class="notactive_page" href="/">Home</a>
             </div>
         </div>
-        <!-- _______________________ end nav bar _______________________ -->
     </header>
 
     <main>
         <section style="text-align: center">
-            <h2 class="topPageHeadings">SignIn</h2>
+            <h2 class="topPageHeadings">Resend Verification Email</h2>
         </section>
 
         <div class="signin_signup_box">
             <div class="signin_signup_content">
-                <form action="/signin" method="post">
+                <p style="margin-bottom: 1.5vh;">Enter the email address you signed up with and we'll send a new verification link.</p>
+                <form action="/resend_verification" method="post">
                     <div class="form-group">
                         <label for="email">Email:</label>
                         <input name="email" id="email" placeholder="Email" type="email" required>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input name="password" id="password" placeholder="Password" type="password" required>
-                    </div>
-                    <button class="signin_submit" type="submit">SignIn</button>
+                    <button class="signin_submit" type="submit">Send Verification Email</button>
                 </form>
                 <ul class="signinlink">
-                    <a href="/signup" id="signup_submit">SIGN UP</a>
+                    <a href="/signin">Back to Sign In</a>
                 </ul>
             </div>
         </div>
@@ -63,7 +56,6 @@
         <p>&copy; 2026 Spoonie. All rights reserved.</p>
     </footer>
 
-    <script src="script.js"></script>
     <script>
         setTimeout(function() {
             document.querySelectorAll('.flash-message').forEach(function(el) {

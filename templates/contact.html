@@ -5,8 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spoonie</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" href="/static/images/icon_logo.png">
 </head>
 <body class="index_page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
     <header>
         <nav>
             <a href="/"><img src="/static/images/spoonielogo.png" alt="Spoonie" class="websitelogo" height="80"></a>
@@ -18,6 +30,7 @@
                 {% if session.get('user_id') %}
                 <a class="notactive_page" href="conditions">Conditions</a>
                 <a class="notactive_page" href="log">Log</a>
+                <a class="notactive_page" href="checkin">Check-In</a>
                 <a class="notactive_page" href="summary">Summary</a>
                 <a class="active_page" href="contact">Contact</a>
                 {% endif %}
@@ -44,18 +57,56 @@
             <h2 class="topPageHeadings">Contact</h2>
         </section>
 
-        <div class="summary-section">
-            <h3>Get in Touch</h3>
-            <p>Email with enquiries or suggestions to improve the site:</p>
-            <p><strong>jacksondkeen@gmail.com</strong></p>
+        <!-- Display view -->
+        <div id="contact-display">
+            <div class="summary-section">
+                <h3>Get in Touch
+                    {% if is_admin %}
+                    <button type="button" class="edit-btn" style="float: right;" onclick="toggleContactEdit()">Edit</button>
+                    {% endif %}
+                </h3>
+                <p>Email with enquiries or suggestions to improve the site:</p>
+                <p><strong>{{ content.contact_email }}</strong></p>
+            </div>
+
+            <div class="summary-section">
+                <h3>About The Developer</h3>
+                <p><strong>{{ content.about_name }}</strong></p>
+                <p>{{ content.about_intro }}</p>
+                <p>{{ content.about_mission }}</p>
+            </div>
         </div>
 
-        <div class="summary-section">
-            <h3>About The Developer</h3>
-            <p><strong>Jackson Keen</strong></p>
-            <p>I am a solo developer trying to use my programming abilities for good and make a difference.</p>
-            <p>I have been inspired to focus heavily on developing a chronic condition manager due to the lack of free services available for those with chronic conditions. This has been brought to my attention through the struggles faced by those closest to me and their limited support from software online.</p>
+        <!-- Admin edit form (hidden by default) -->
+        {% if is_admin %}
+        <div id="contact-edit" style="display: none;">
+            <form method="POST" action="/update_contact">
+                <div class="add_condition">
+                    <h3>Edit Contact Page</h3>
+                    <div class="log-form-group">
+                        <label>Contact Email</label>
+                        <input type="text" name="contact_email" value="{{ content.contact_email }}" class="auth-input">
+                    </div>
+                    <div class="log-form-group">
+                        <label>Developer Name</label>
+                        <input type="text" name="about_name" value="{{ content.about_name }}" class="auth-input">
+                    </div>
+                    <div class="log-form-group">
+                        <label>Introduction</label>
+                        <textarea name="about_intro" class="trigger-input">{{ content.about_intro }}</textarea>
+                    </div>
+                    <div class="log-form-group">
+                        <label>Mission / Background</label>
+                        <textarea name="about_mission" class="trigger-input">{{ content.about_mission }}</textarea>
+                    </div>
+                    <div class="inline-edit-actions">
+                        <button type="submit" class="add-condition-btn">Save</button>
+                        <button type="button" class="delete-btn" onclick="toggleContactEdit()">Cancel</button>
+                    </div>
+                </div>
+            </form>
         </div>
+        {% endif %}
     </main>
 
     <footer>
@@ -63,5 +114,23 @@
     </footer>
 
     <script src="script.js"></script>
+    <script>
+        function toggleContactEdit() {
+            const display = document.getElementById('contact-display');
+            const edit = document.getElementById('contact-edit');
+            const isEditing = edit.style.display !== 'none';
+            display.style.display = isEditing ? '' : 'none';
+            edit.style.display = isEditing ? 'none' : '';
+        }
+    </script>
+    <script>
+        setTimeout(function() {
+            document.querySelectorAll('.flash-message').forEach(function(el) {
+                el.style.transition = 'opacity 0.5s ease';
+                el.style.opacity = '0';
+                setTimeout(function() { el.remove(); }, 500);
+            });
+        }, 4000);
+    </script>
 </body>
 </html>
