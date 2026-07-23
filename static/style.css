@@ -41,7 +41,7 @@ header {
 
 main {
     flex: 1;
-    margin-top: 18vh;
+    margin-top: max(18vh, 120px);
 }
 
 
@@ -54,6 +54,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 2vw;
     box-shadow: 0 8px 25px rgba(26, 58, 53, 0.3);
 }
 
@@ -62,17 +63,13 @@ main {
     align-items: center;
 }
 
-.nav-left {
-    padding-left: 2vw;
-}
-
-.nav-right {
-    padding-right: 2vw;
-}
-
 .active_page {
-    color: #fafafa; 
+    display: inline-block;
+    color: #fafafa;
     text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 15px;
     padding-left: 1vw;
     padding-right: 1vw;
     background-color:  #1b766c;
@@ -80,8 +77,12 @@ main {
 }
 
 .notactive_page {
+    display: inline-block;
     color: #fafafa;
     text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 15px;
     padding-left: 1vw;
     padding-right: 1vw;
     border-radius: 5px;
@@ -97,8 +98,12 @@ main {
 }
 
 .dropdown-toggle {
+    display: inline-block;
     color: #fafafa;
     cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 15px;
     padding: 0 1vw;
     border-radius: 5px;
     background-color: #1b766c;
@@ -331,7 +336,9 @@ main {
     background-color: #c0392b;
     color: #fafafa;
     border: none;
-    padding: 5px 14px;
+    width: 70px;
+    padding: 5px 0;
+    text-align: center;
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
@@ -346,7 +353,9 @@ main {
     background-color: #2BB3A3;
     color: #fafafa;
     border: none;
-    padding: 5px 14px;
+    width: 70px;
+    padding: 5px 0;
+    text-align: center;
     border-radius: 8px;
     font-size: 13px;
     cursor: pointer;
@@ -671,6 +680,23 @@ main {
 }
 
 
+
+
+
+/* check-in page */
+.add_checkin_display{
+    border: 2px solid #1b766c;
+    border-radius: 20px;
+    background-color: rgb(107, 163, 182);
+    padding: 1.5vw;
+    color: #fafafa;
+    margin-top: 2vh;
+    box-shadow: 0 14px 35px rgba(26, 58, 53, 0.3);
+}
+/* end check-in page */
+
+
+
 /* Summary page styles */
 .summary-container {
     display: flex;
@@ -785,37 +811,45 @@ section h2 {
 @media (max-width: 768px) {
 
     main {
-        margin-top: 22vh;
+        margin-top: max(22vh, 125px);
         padding-bottom: 3vh;
     }
 
-    /* Nav */
+    /* Nav — flatten into one row of equal-width links so it always fits on one line */
     .topnav {
         height: auto;
         min-height: 5vh;
-        padding: 6px 0;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .nav-left {
-        padding-left: 3vw;
-        flex-wrap: wrap;
+        padding: 6px 1.5vw;
         gap: 2px;
     }
 
-    .nav-right {
-        padding-right: 3vw;
+    .nav-left, .nav-right {
+        display: contents;
+    }
+
+    .active_page, .notactive_page, .dropdown {
+        flex: 1 1 0;
+        min-width: 0;
     }
 
     .active_page, .notactive_page {
-        font-size: 13px;
-        padding-left: 8px;
-        padding-right: 8px;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        letter-spacing: -0.3px;
+        padding-left: 2px;
+        padding-right: 2px;
     }
 
     .dropdown-toggle {
-        font-size: 13px;
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+        letter-spacing: -0.3px;
     }
 
     /* Index buttons — stack to single column */
@@ -918,7 +952,7 @@ section h2 {
 @media (max-width: 480px) {
 
     main {
-        margin-top: 26vh;
+        margin-top: max(26vh, 130px);
     }
 
     .websitelogo {
@@ -927,9 +961,15 @@ section h2 {
     }
 
     .active_page, .notactive_page {
-        font-size: 12px;
-        padding-left: 6px;
-        padding-right: 6px;
+        font-size: 10px;
+        letter-spacing: -0.4px;
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+
+    .dropdown-toggle {
+        font-size: 10px;
+        letter-spacing: -0.4px;
     }
 
     .index_button_links {
@@ -945,5 +985,30 @@ section h2 {
 
     .flareup-actions {
         flex-wrap: wrap;
+    }
+}
+
+/* Short viewports (landscape phones, small browser windows) — shrink the
+   fixed header itself instead of just pushing content further down */
+@media (max-height: 500px) {
+    .websitelogo {
+        height: 50px;
+        max-height: 50px;
+    }
+
+    .topnav {
+        height: auto;
+        min-height: 34px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    main {
+        margin-top: 100px;
+    }
+
+    .index_button_links {
+        height: auto;
+        min-height: 90px;
     }
 }
